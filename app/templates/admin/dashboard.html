@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% from '_form.html' import field, error_summary %}
+{% block title %}Setup{% endblock %}
+{% block content %}
+<h1>System setup</h1>
+<p class="lead">Agencies, the task types each one handles with its time limit (SLA), and staff accounts. Every change is recorded in the audit log.</p>
+
+<div class="grid2">
+<section class="card">
+  <h2>Agencies</h2>
+  <table class="compact"><tbody>{% for a in agencies %}<tr><td><strong>{{ a.agency_name }}</strong></td><td class="muted">{{ a.description or '' }}</td></tr>{% endfor %}</tbody></table>
+  <h3>Add an agency</h3>
+  {{ error_summary(ag) }}
+  <form method="post" action="{{ url_for('admin.add_agency') }}" novalidate>
+    {{ ag.hidden_tag() }}
+    {{ field(ag.agency_name, hint='Must be unique, e.g. "Waste Management".', maxlength=100) }}
+    {{ field(ag.description, rows=2, maxlength=500) }}
+    {{ ag.submit(class_='btn primary') }}
+  </form>
+</section>
+
+<section class="card">
+  <h2>Staff and reviewer accounts</h2>
+  <table class="compact"><tbody>{% for u in users %}<tr><td>{{ u.name }}<br><span class="muted small">{{ u.email }}</span></td><td>{{ ROLE_LABEL[u.role] }}</td><td>{{ u.agency_name or '' }}</td></tr>{% endfor %}</tbody></table>
+  <h3>Create an account</h3>
+  {{ error_summary(staff) }}
+  <form method="post" action="{{ url_for('admin.add_user') }}" novalidate>
+    {{ staff.hidden_tag() }}
+    {{ field(staff.name, autocomplete='off') }}
+    {{ field(staff.email, type='email', autocomplete='off') }}
+    {{ field(staff.role, data_role_select='') }}
+    {{ field(staff.agency_id, hint='Required for agency staff; leave as "None" for reviewers.') }}
+    {{ field(staff.password, hint='At least 8 characters with a letter and a number. Share it privately.', autocomplete='new-password') }}
+    {{ staff.submit(class_='btn primary') }}
+  </form>
+</section>
+</div>
+
+<section class="card">
+  <h2>Task types and SLAs</h2>
+  <table>
+    <thead><tr><th scope="col">Agency</th><th scope="col">Code</th><th scope="col">Description</th><th scope="col">SLA</th><th scope="col">Change SLA</th></tr></thead>
+    <tbody>{% for t in types %}
+      <tr><td>{{ t.agency_name }}</td><td><code>{{ t.task_code }}</code></td><td>{{ t.task_description or '' }}</td><td>{{ t.sla_hours }} h</td>
+        <td><form method="post" action="{{ url_for('admin.change_sla', agency_id=t.agency_id, code=t.task_code) }}" class="row-form" novalidate>
+          {{ sla_form.hidden_tag() }}
+          <label class="sr-only" for="sla-{{ t.agency_id }}-{{ t.task_code }}">New SLA in hours for {{ t.task_code }}</label>
+          <input id="sla-{{ t.agency_id }}-{{ t.task_code }}" name="sla-sla_hours" type="number" min="1" max="8760" step="1" inputmode="numeric" value="{{ t.sla_hours }}" required>
+          <button class="btn small">Save</button></form></td></tr>
+    {% endfor %}</tbody>
+  </table>
+  <h3>Add a task type</h3>
+  {{ error_summary(tt) }}
+  <form method="post" action="{{ url_for('admin.add_task_type') }}" class="grid-form" novalidate>
+    {{ tt.hidden_tag() }}
+    {{ field(tt.agency_id) }}
+    {{ field(tt.task_code, hint='Capitals, digits and _ e.g. DRAIN_CLEAN.', maxlength=30) }}
+    {{ field(tt.sla_hours, hint='Whole hours from 1 to 8760.', type='number', min=1, max=8760, inputmode='numeric') }}
+    {{ field(tt.task_description, rows=2, maxlength=500) }}
+    {{ tt.submit(class_='btn primary') }}
+  </form>
+</section>
+
+<section class="card">
+  <h2>Recent setup changes</h2>
+  <table class="compact"><tbody>{% for c in changes %}<tr><td>{{ c.created_at.strftime('%d %b %H:%M') }}</td><td>{{ c.who }}</td><td>{{ c.reason }}</td></tr>{% else %}<tr><td class="empty">No changes yet.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}My agency's tasks{% endblock %}
+{% block content %}
+<h1>My agency's tasks</h1>
+<p class="lead">Tasks your agency can work on now, earliest deadline first. Tasks still waiting for another agency do not appear until they are unlocked.</p>
+{% if rows %}
+<table>
+  <caption class="sr-only">Tasks for your agency</caption>
+  <thead><tr><th scope="col">Task</th><th scope="col">Complaint</th><th scope="col">Work</th><th scope="col">Status</th><th scope="col">Due</th><th scope="col">Update</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  {% set f = forms[r.task_id] %}
+    <tr{% if r.overdue %} class="row-overdue"{% endif %}>
+      <td>#{{ r.task_id }}<br><span class="muted small">{{ r.task_code }}</span></td>
+      <td>#{{ r.complaint_id }}<br><span class="muted small">{{ r.summary }}…</span></td>
+      <td>{{ r.task_description }}</td>
+      <td><span class="badge s-{{ r.status|lower }}">{{ r.status|replace('_',' ')|title }}</span></td>
+      <td>{{ r.due_at.strftime('%d %b, %H:%M') }}{% if r.overdue %}<br><strong class="danger">Overdue</strong>{% endif %}</td>
+      <td>
+        <form method="post" action="{{ url_for('staff.update_status', task_id=r.task_id) }}" class="row-form">
+          {{ f.hidden_tag() }}
+          <label for="{{ f.new_status.id }}" class="sr-only">New status for task {{ r.task_id }}</label>
+          {{ f.new_status() }}
+          {{ f.submit(class_='btn small primary') }}
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted small">Only the next allowed steps are offered. A task you mark as failed goes to a reviewer.</p>
+{% else %}
+<p class="empty">No tasks are ready for your agency right now.</p>
+{% endif %}
+{% endblock %}

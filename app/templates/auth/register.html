@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% from '_form.html' import field, error_summary %}
+{% block title %}Create a citizen account{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Create a citizen account</h1>
+  <p class="lead">You need an account to report a problem and follow its progress. Fields marked <span class="req">*</span> are required.</p>
+  {{ error_summary(form) }}
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.name, autocomplete='name') }}
+    {{ field(form.email, hint='We use this only to log you in.', autocomplete='email', type='email', inputmode='email') }}
+    {{ field(form.password, hint='At least 8 characters, with at least one letter and one number.', autocomplete='new-password') }}
+    {{ field(form.confirm, autocomplete='new-password') }}
+    {{ form.submit(class_='btn primary') }}
+  </form>
+  <p class="muted">Already registered? <a href="{{ url_for('auth.login') }}">Log in</a>.</p>
+</section>
+{% endblock %}

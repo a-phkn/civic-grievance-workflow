@@ -1,0 +1,69 @@
+
+== test_checks ==
+[PASS] Staff account without an agency  (CHECK agency_id iff AGENCY_STAFF)  -- rejected: new row for relation "app_user" violates check constraint "chk_user_agency"
+[PASS] Citizen account with an agency  (CHECK agency_id iff AGENCY_STAFF)  -- rejected: new row for relation "app_user" violates check constraint "chk_user_agency"
+[PASS] Unknown role  (domain: role)  -- rejected: new row for relation "app_user" violates check constraint "chk_user_role"
+[PASS] Duplicate email  (schema: email UQ)  -- rejected: duplicate key value violates unique constraint "app_user_email_key"
+[PASS] Upper-case email (would dodge UNIQUE)  (CHECK email = lower(email))  -- rejected: new row for relation "app_user" violates check constraint "chk_user_email_lower"
+[PASS] Duplicate agency name  (schema: agency_name UQ)  -- rejected: duplicate key value violates unique constraint "agency_agency_name_key"
+[PASS] SLA of 0 hours  (domain: sla_hours > 0)  -- rejected: new row for relation "agency_task_type" violates check constraint "chk_sla_positive"
+[PASS] Complaint filed by a staff user  (trigger T1: citizen_id must be CITIZEN)  -- rejected: Only a CITIZEN can own a complaint (user 3)
+[PASS] Blank complaint description  (CHECK description not blank)  -- rejected: new row for relation "complaint" violates check constraint "chk_complaint_description"
+[PASS] ACCEPTED complaint without a proposal id  (CHECK accepted_proposal_id iff ACCEPTED)  -- rejected: new row for relation "complaint" violates check constraint "chk_complaint_accepted"
+[PASS] New task created as IN_PROGRESS  (trigger T2a / DFD 4.4)  -- rejected: A new task must start as BLOCKED or READY_FOR_DISPATCH, not IN_PROGRESS
+[PASS] Task with a task code its agency does not offer  (composite FK TASK -> AGENCY_TASK_TYPE)  -- rejected: insert or update on table "task" violates foreign key constraint "fk_task_type"
+[PASS] Task depending on itself  (schema CHECK prerequisite <> dependent)  -- rejected: new row for relation "task_dependency" violates check constraint "chk_dep_not_self"
+[PASS] Audit row about a task AND a complaint  (schema CHECK on AUDIT_LOG)  -- rejected: new row for relation "audit_log" violates check constraint "chk_audit_target"
+[PASS] New dependency after the complaint is ACCEPTED  (trigger T4: no dependencies after acceptance)  -- rejected: Complaint 101 is already accepted; dependencies cannot be added
+[PASS] Seed tasks 1 and 2 are READY with deadlines; task 3 BLOCKED without  (review gap 2 / CHECK deadlines)  -- [(1, 'READY_FOR_DISPATCH', '2 days, 0:00:00'), (2, 'READY_FOR_DISPATCH', '1 day, 0:00:00'), (3, 'BLOCKED', 'None'), (21, 'BLOCKED', 'None')]
+
+== test_transitions ==
+[PASS] Illegal jump BLOCKED -> IN_PROGRESS  (trigger T2b, state diagram)  -- rejected: Illegal task status change BLOCKED -> IN_PROGRESS (task 3)
+[PASS] Illegal jump READY -> COMPLETED (skips IN_PROGRESS)  (trigger T2b, DFD 5.2)  -- rejected: Illegal task status change READY_FOR_DISPATCH -> COMPLETED (task 1)
+[PASS] Retry on a task that has not FAILED  (fn_resolve_retry guard, DFD 5.4)  -- rejected: Only a FAILED task can be retried (task 1)
+[PASS] Cancel a task that is already CANCELLED  (fn_resolve_cancel guard)  -- rejected: Task 3 is already cancelled
+[PASS] Legal path READY -> IN_PROGRESS -> COMPLETED stamps completed_at  (T2b + CHECK completed_at)
+[PASS] COMPLETED is final  (trigger T2b)  -- rejected: Illegal task status change COMPLETED -> IN_PROGRESS (task 1)
+
+== test_unlock ==
+[PASS] Task 1 done, task 3 still BLOCKED (task 2 pending)  (DFD 5.3)
+[PASS] Task 2 done -> trigger unlocks task 3 with due_at = ready_at + 72 h  (DFD 5.3)  -- READY_FOR_DISPATCH, 3 days, 0:00:00
+[PASS] Automatic unlock is audited with user_id NULL  (DFD 5.3 -> D7 AUDIT_LOG)
+
+== test_concurrent_unlock ==
+[PASS] Transaction B waited for A's lock on task 3  (T3 step 2, SELECT ... FOR UPDATE)
+[PASS] Two prerequisites completed concurrently -> task 3 unlocked once  (T3 steps 2-3)  -- READY_FOR_DISPATCH
+
+== test_exceptions ==
+[PASS] Task 1 FAILED -> task 3 BLOCKED_EXCEPTION  (DFD 5.3/5.4)
+[PASS] Retry without a real reason  (design: every resolution needs a reason)  -- rejected: A reason of at least 5 characters is required
+[PASS] Retry: task 1 READY again with new deadlines  (DFD 5.4 retry)
+[PASS] Retry: task 3 back to BLOCKED (task 2 not done yet)  (DFD 5.4 + re-check)
+[PASS] Retry audited with the reviewer and reason  (D7 AUDIT_LOG)
+[PASS] Waive 1->3: task 3 back to BLOCKED (still waits on task 2)  (DFD 5.4 waive)
+[PASS] Task 2 done -> task 3 READY (waived dependency ignored)  (DFD 5.3)
+[PASS] Cancel: BLOCKED_EXCEPTION -> CANCELLED  (DFD 5.4 cancel)
+[PASS] Cancel: FAILED -> CANCELLED (reviewer gives up on a failed task)  (DFD 5.4 cancel)
+[PASS] Complaint resolves after the failed task is cancelled  (v_complaint_progress)
+[PASS] Cancel an IN_PROGRESS task (not on the state diagram)  (trigger T2b)  -- rejected: Illegal task status change IN_PROGRESS -> CANCELLED (task 2)
+
+== test_chain ==
+[PASS] A FAILED -> B and C both BLOCKED_EXCEPTION  (T3 step 5, repeated down the chain)
+[PASS] Retry A -> B and C both back to BLOCKED  (re-check recurses down the chain)
+
+== test_acceptance_rollback ==
+[PASS] Dependency on another complaint's task is rejected  (composite FK TASK_DEPENDENCY -> TASK)  -- insert or update on table "task_dependency" violates foreign key constraint "fk_dep_prerequisite"
+[PASS] Whole acceptance rolled back (no tasks, still PENDING)  (DFD 4.4 single transaction)  -- tasks=0, status=PENDING
+
+== test_views ==
+[PASS] Overdue view lists only the late task  (design: overdue computed, not stored)  -- [1]
+[PASS] Complaint resolved when all tasks are COMPLETED or CANCELLED  (design: derived in a view)
+
+== test_app_role ==
+[PASS] App cannot edit an audit entry  (roles.sql least privilege)  -- permission denied for table audit_log
+[PASS] App cannot delete audit entries  (roles.sql least privilege)  -- permission denied for table audit_log
+[PASS] App cannot delete complaints  (roles.sql least privilege)  -- permission denied for table complaint
+[PASS] App cannot drop a table  (roles.sql least privilege)  -- must be owner of table task
+[PASS] App can still update a task status  (roles.sql least privilege)
+
+49/49 passed

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}All complaints{% endblock %}
+{% block content %}
+<h1>All complaints</h1>
+<table>
+  <caption class="sr-only">All complaints, newest first</caption>
+  <thead><tr><th scope="col">#</th><th scope="col">Citizen</th><th scope="col">Submitted</th><th scope="col">Problem</th><th scope="col">Intake</th><th scope="col">Tasks done</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><a href="{{ url_for('reviewer.complaint_detail', complaint_id=r.complaint_id) }}">#{{ r.complaint_id }}</a></td>
+      <td>{{ r.citizen }}</td>
+      <td>{{ r.created_at.strftime('%d %b %Y') }}</td>
+      <td>{{ r.summary }}</td>
+      <td><span class="badge s-{{ r.intake_status|lower }}">{{ r.intake_status|replace('_',' ')|title }}</span></td>
+      <td>{% if r.resolved %}<span class="badge s-completed">Resolved</span>{% else %}{{ r.completed_tasks }} / {{ r.total_tasks }}{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="empty">No complaints yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Complaint #{{ c.complaint_id }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('citizen.my_complaints') }}">← My complaints</a></p>
+<section class="card">
+  <div class="page-head">
+    <h1>Complaint #{{ c.complaint_id }}</h1>
+    <span class="badge s-{{ c.intake_status|lower }}">{{ c.intake_status|replace('_',' ')|title }}</span>
+  </div>
+  <p class="muted">Submitted {{ c.created_at.strftime('%d %b %Y, %H:%M') }}</p>
+  <p class="quote">{{ c.description }}</p>
+  {% for p in photos %}<img class="photo" src="{{ url_for('citizen.photo', complaint_id=c.complaint_id, name=p) }}" alt="Photo attached to complaint {{ c.complaint_id }}">{% endfor %}
+</section>
+<section class="card">
+  <h2>Progress</h2>
+  {% if tasks %}
+  <ol class="steps">
+    {% for t in tasks %}
+    <li class="step">
+      <strong>{{ t.agency_name }}</strong>: {{ t.task_description }}
+      <span class="badge s-{{ t.status|lower }}">{{ status_text[t.status] }}</span>
+      {% if t.completed_at %}<span class="muted small">finished {{ t.completed_at.strftime('%d %b %Y') }}</span>
+      {% elif t.due_at %}<span class="muted small">target {{ t.due_at.strftime('%d %b %Y, %H:%M') }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% elif c.intake_status == 'REJECTED' %}
+  <p>This complaint was not accepted. A reviewer recorded the reason.</p>
+  {% else %}
+  <p>A reviewer will check your complaint and plan the work. The steps will appear here.</p>
+  {% endif %}
+</section>
+{% endblock %}

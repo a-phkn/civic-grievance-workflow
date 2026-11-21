@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Exceptions{% endblock %}
+{% macro reason_form(action, label, cls='') %}
+  <form method="post" action="{{ action }}" class="resolve" novalidate>
+    {{ form.hidden_tag() }}
+    <label>Reason <span class="req" aria-hidden="true">*</span>
+      <input name="reason" required minlength="5" maxlength="500" placeholder="Why? (kept in the audit log)">
+    </label>
+    <button class="btn small {{ cls }}">{{ label }}</button>
+  </form>
+{% endmacro %}
+{% block content %}
+<h1>Exceptions</h1>
+<p class="lead">Tasks that failed, and tasks on hold because something they wait for failed or was cancelled. Every action needs a reason and is recorded.</p>
+
+<section class="card">
+  <h2>Failed tasks <span class="count">{{ failed|length }}</span></h2>
+  {% for t in failed %}
+  <div class="exc">
+    <p><strong>Task #{{ t.task_id }}</strong> · {{ t.task_code }} · {{ t.agency_name }} · complaint
+       <a href="{{ url_for('reviewer.complaint_detail', complaint_id=t.complaint_id) }}">#{{ t.complaint_id }}</a></p>
+    <div class="actions">
+      {{ reason_form(url_for('reviewer.retry', task_id=t.task_id), 'Retry (new deadline)', 'primary') }}
+      {{ reason_form(url_for('reviewer.cancel', task_id=t.task_id), 'Cancel instead of retry', 'danger') }}
+    </div>
+  </div>
+  {% else %}<p class="empty">No failed tasks.</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h2>Tasks on hold <span class="count">{{ held|length }}</span></h2>
+  {% for t in held %}
+  <div class="exc">
+    <p><strong>Task #{{ t.task_id }}</strong> · {{ t.task_code }} · {{ t.agency_name }} · complaint
+       <a href="{{ url_for('reviewer.complaint_detail', complaint_id=t.complaint_id) }}">#{{ t.complaint_id }}</a></p>
+    <p class="muted small">Waits for:
+      {% for p in prereqs[t.task_id] %}task #{{ p.task_id }} {{ p.task_code }} (<span class="badge s-{{ p.status|lower }}">{{ p.status|replace('_',' ')|title }}</span>){{ ', ' if not loop.last }}{% endfor %}</p>
+    <div class="actions">
+      {% for p in prereqs[t.task_id] if p.status in ('FAILED', 'CANCELLED', 'BLOCKED_EXCEPTION') %}
+        {{ reason_form(url_for('reviewer.waive', prereq=p.task_id, dependent=t.task_id), 'Stop waiting for #' ~ p.task_id) }}
+      {% endfor %}
+      {{ reason_form(url_for('reviewer.cancel', task_id=t.task_id), 'Cancel this task', 'danger') }}
+    </div>
+  </div>
+  {% else %}<p class="empty">No tasks on hold.</p>{% endfor %}
+</section>
+{% endblock %}

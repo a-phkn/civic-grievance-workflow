@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<h1>Status report</h1>
+<div class="grid3">
+  <section class="card"><h2>Complaints by intake</h2>
+    <table class="compact"><tbody>{% for r in intake %}<tr><td>{{ r.intake_status|replace('_',' ')|title }}</td><td class="num">{{ r.n }}</td></tr>{% endfor %}</tbody></table></section>
+  <section class="card"><h2>Tasks by status</h2>
+    <table class="compact"><tbody>{% for r in by_status %}<tr><td><span class="badge s-{{ r.status|lower }}">{{ r.status|replace('_',' ')|title }}</span></td><td class="num">{{ r.n }}</td></tr>{% endfor %}</tbody></table></section>
+  <section class="card"><h2>Tasks by agency</h2>
+    <table class="compact"><thead><tr><th scope="col">Agency</th><th scope="col" class="num">Done</th><th scope="col" class="num">Total</th></tr></thead>
+    <tbody>{% for r in by_agency %}<tr><td>{{ r.agency_name }}</td><td class="num">{{ r.done }}</td><td class="num">{{ r.total }}</td></tr>{% endfor %}</tbody></table></section>
+</div>
+<section class="card">
+  <h2>Overdue tasks <span class="count">{{ overdue|length }}</span></h2>
+  <p class="muted small">Computed live from due dates (view <code>v_task_overdue</code>); nothing is stored.</p>
+  {% if overdue %}
+  <table><thead><tr><th scope="col">Task</th><th scope="col">Agency</th><th scope="col">Status</th><th scope="col">Was due</th><th scope="col">Late by</th></tr></thead>
+  <tbody>{% for t in overdue %}<tr><td>#{{ t.task_id }} {{ t.task_code }}</td><td>{{ t.agency_name }}</td><td>{{ t.status|replace('_',' ')|title }}</td><td>{{ t.due_at.strftime('%d %b, %H:%M') }}</td><td>{{ t.overdue_by.days }} d {{ (t.overdue_by.seconds // 3600) }} h</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="empty">Nothing is overdue.</p>{% endif %}
+</section>
+{% endblock %}

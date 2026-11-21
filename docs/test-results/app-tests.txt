@@ -1,0 +1,45 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: .
+plugins: anyio-4.15.1, platformdirs-4.14.8
+collecting ... collected 36 items
+
+tests/test_app.py::test_each_role_sees_only_its_own_pages[citizen@civic.demo] PASSED [  2%]
+tests/test_app.py::test_each_role_sees_only_its_own_pages[water.staff@civic.demo] PASSED [  5%]
+tests/test_app.py::test_each_role_sees_only_its_own_pages[reviewer@civic.demo] PASSED [  8%]
+tests/test_app.py::test_each_role_sees_only_its_own_pages[admin@civic.demo] PASSED [ 11%]
+tests/test_app.py::test_anonymous_is_sent_to_login PASSED                [ 13%]
+tests/test_app.py::test_citizen_cannot_open_another_citizens_complaint PASSED [ 16%]
+tests/test_app.py::test_staff_cannot_update_another_agencys_task PASSED  [ 19%]
+tests/test_app.py::test_register_cannot_choose_a_role PASSED             [ 22%]
+tests/test_app.py::test_post_without_csrf_token_is_rejected PASSED       [ 25%]
+tests/test_app.py::test_sql_injection_in_login_fails PASSED              [ 27%]
+tests/test_app.py::test_sql_injection_text_is_stored_as_plain_text PASSED [ 30%]
+tests/test_app.py::test_script_in_complaint_is_escaped PASSED            [ 33%]
+tests/test_app.py::test_passwords_are_argon2id_and_never_plain PASSED    [ 36%]
+tests/test_app.py::test_login_locks_after_five_failures PASSED           [ 38%]
+tests/test_app.py::test_unknown_email_and_wrong_password_look_the_same PASSED [ 41%]
+tests/test_app.py::test_next_parameter_is_never_followed PASSED          [ 44%]
+tests/test_app.py::test_security_headers PASSED                          [ 47%]
+tests/test_app.py::test_mongodb_needs_a_login_and_app_user_is_limited PASSED [ 50%]
+tests/test_app.py::test_logout_requires_post PASSED                      [ 52%]
+tests/test_app.py::test_register_validation_messages PASSED              [ 55%]
+tests/test_app.py::test_duplicate_email_message PASSED                   [ 58%]
+tests/test_app.py::test_complaint_too_short PASSED                       [ 61%]
+tests/test_app.py::test_admin_sla_must_be_positive PASSED                [ 63%]
+tests/test_app.py::test_admin_staff_needs_agency PASSED                  [ 66%]
+tests/test_app.py::test_photo_upload_accepted_and_private PASSED         [ 69%]
+tests/test_app.py::test_renamed_non_image_is_rejected PASSED             [ 72%]
+tests/test_app.py::test_wrong_extension_is_rejected PASSED               [ 75%]
+tests/test_app.py::test_upload_over_5mb_is_refused PASSED                [ 77%]
+tests/test_app.py::test_complaint_written_to_postgres_and_mongodb PASSED [ 80%]
+tests/test_app.py::test_mongodb_failure_rolls_back_postgres PASSED       [ 83%]
+tests/test_app.py::test_unlock_demo_through_the_ui PASSED                [ 86%]
+tests/test_app.py::test_staff_cannot_skip_a_step PASSED                  [ 88%]
+tests/test_app.py::test_failure_then_reviewer_retry PASSED               [ 91%]
+tests/test_app.py::test_reviewer_waive_and_cancel PASSED                 [ 94%]
+tests/test_app.py::test_admin_sla_change_is_audited PASSED               [ 97%]
+tests/test_app.py::test_admin_creates_staff_who_can_log_in PASSED        [100%]
+
+============================= 36 passed in 36.78s ==============================

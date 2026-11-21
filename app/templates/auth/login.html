@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% from '_form.html' import field, error_summary %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Log in</h1>
+  <p class="lead">Citizens, agency staff, reviewers and admins all log in here. You will see only the pages for your role.</p>
+  {{ error_summary(form) }}
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.email, autocomplete='username', type='email', inputmode='email') }}
+    {{ field(form.password, autocomplete='current-password') }}
+    {{ form.submit(class_='btn primary') }}
+  </form>
+  <p class="muted">New citizen? <a href="{{ url_for('auth.register') }}">Create an account</a>.</p>
+</section>
+{% endblock %}

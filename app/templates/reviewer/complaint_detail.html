@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% from '_form.html' import field %}
+{% block title %}Complaint #{{ c.complaint_id }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('reviewer.complaints') }}">← All complaints</a></p>
+<section class="card">
+  <div class="page-head">
+    <h1>Complaint #{{ c.complaint_id }}</h1>
+    <span class="badge s-{{ c.intake_status|lower }}">{{ c.intake_status|replace('_',' ')|title }}</span>
+  </div>
+  <p class="muted">From {{ c.citizen }} · {{ c.created_at.strftime('%d %b %Y, %H:%M') }}{% if c.accepted_proposal_id %} · accepted proposal <code>{{ c.accepted_proposal_id }}</code>{% endif %}</p>
+  <p class="quote">{{ c.description }}</p>
+  {% for p in photos %}<img class="photo" src="{{ url_for('citizen.photo', complaint_id=c.complaint_id, name=p) }}" alt="Photo attached to complaint {{ c.complaint_id }}">{% endfor %}
+</section>
+
+<div class="grid2">
+<section class="card">
+  <h2>Tasks</h2>
+  {% if tasks %}
+  <table>
+    <thead><tr><th scope="col">Task</th><th scope="col">Agency</th><th scope="col">Status</th><th scope="col">Due</th></tr></thead>
+    <tbody>{% for t in tasks %}
+      <tr><td>#{{ t.task_id }} {{ t.task_code }}</td><td>{{ t.agency_name }}</td>
+          <td><span class="badge s-{{ t.status|lower }}">{{ t.status|replace('_',' ')|title }}</span></td>
+          <td>{{ t.due_at.strftime('%d %b, %H:%M') if t.due_at else '—' }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  {% if deps %}<p class="muted small">Waits for: {% for d in deps %}task {{ d.dependent_task_id }} after {{ d.prerequisite_task_id }}{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+  {% else %}<p class="empty">No tasks yet. Phase 1 does not include the AI proposal step.</p>{% endif %}
+</section>
+
+{% if c.intake_status in ('PENDING', 'UNDER_REVIEW') %}
+<section class="card">
+  <h2>Reject this complaint</h2>
+  <p class="muted">Use this when the complaint is not a civic problem or is a duplicate. The citizen sees that it was not accepted.</p>
+  <form method="post" action="{{ url_for('reviewer.reject', complaint_id=c.complaint_id) }}" novalidate>
+    {{ reject_form.hidden_tag() }}
+    {{ field(reject_form.reason, hint='Recorded in the audit log. 5 to 500 characters.', rows=3, maxlength=500) }}
+    {{ reject_form.submit(class_='btn danger', value='Reject complaint') }}
+  </form>
+</section>
+{% endif %}
+</div>
+
+<section class="card">
+  <h2>History</h2>
+  <table class="compact">
+    <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">What</th><th scope="col">Change</th><th scope="col">Reason</th></tr></thead>
+    <tbody>{% for h in history %}
+      <tr><td>{{ h.created_at.strftime('%d %b %H:%M:%S') }}</td><td>{{ h.who or 'System (automatic)' }}</td>
+          <td>{{ h.action }}{% if h.task_id %} · task {{ h.task_id }}{% endif %}</td>
+          <td>{{ h.old_status or '' }}{% if h.new_status %} → {{ h.new_status }}{% endif %}</td><td>{{ h.reason or '' }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+</section>
+{% endblock %}

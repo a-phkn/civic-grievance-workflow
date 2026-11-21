@@ -1,0 +1,28 @@
+{# One way to draw every field: label above, hint under the label, the input,
+   then the error right under it. aria-describedby links hint and error to the
+   input so screen readers read them; aria-invalid marks a field with an error. #}
+{% macro field(f, hint=None) %}
+  {% set ids = [] %}
+  {% if hint %}{% set _ = ids.append(f.id ~ '-hint') %}{% endif %}
+  {% if f.errors %}{% set _ = ids.append(f.id ~ '-error') %}{% endif %}
+  {% set attrs = dict(kwargs) %}
+  {% if ids %}{% set _ = attrs.update({'aria_describedby': ids|join(' ')}) %}{% endif %}
+  {% if f.errors %}{% set _ = attrs.update({'aria_invalid': 'true'}) %}{% endif %}
+  <div class="field{% if f.errors %} has-error{% endif %}">
+    <label for="{{ f.id }}">{{ f.label.text }}{% if f.flags.required %} <span class="req" aria-hidden="true">*</span>{% else %} <span class="opt">(optional)</span>{% endif %}</label>
+    {% if hint %}<p class="hint" id="{{ f.id }}-hint">{{ hint }}</p>{% endif %}
+    {{ f(**attrs) }}
+    {% for e in f.errors %}<p class="error" id="{{ f.id }}-error">{{ e }}</p>{% endfor %}
+  </div>
+{% endmacro %}
+
+{% macro error_summary(form) %}
+  {% set bad = [] %}
+  {% for f in form if f.errors and f.type != 'CSRFTokenField' %}{% set _ = bad.append(f) %}{% endfor %}
+  {% if bad %}
+  <div class="error-summary" role="alert" tabindex="-1">
+    <h2>Please fix {{ bad|length }} {{ 'problem' if bad|length == 1 else 'problems' }}</h2>
+    <ul>{% for f in bad %}<li><a href="#{{ f.id }}">{{ f.label.text }}: {{ f.errors[0] }}</a></li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+{% endmacro %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% from '_form.html' import field, error_summary %}
+{% block title %}Report a problem{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Report a problem</h1>
+  <p class="lead">Tell us what is wrong and where. We will send it to the right agencies and you can follow each step.</p>
+  {{ error_summary(form) }}
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+    <fieldset>
+      <legend>1. Describe the problem</legend>
+      {{ field(form.description,
+               hint='Say what you see and the exact place, e.g. "Water pipe burst outside 12th Main, near the bus stop." 20 to 2,000 characters.',
+               rows=6, maxlength=2000, data_counter='') }}
+    </fieldset>
+    <fieldset>
+      <legend>2. Add a photo</legend>
+      {{ field(form.photo, hint='A JPG or PNG up to 5 MB. A clear photo helps the agency find the problem.',
+               accept='.jpg,.jpeg,.png,image/jpeg,image/png') }}
+    </fieldset>
+    <p class="muted small">Your name and email are never sent to the automatic text analysis, only the description.</p>
+    {{ form.submit(class_='btn primary') }}
+    <a class="btn" href="{{ url_for('citizen.my_complaints') }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}
