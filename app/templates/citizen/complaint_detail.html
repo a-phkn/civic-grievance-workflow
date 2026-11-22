@@ -21,11 +21,14 @@
       <span class="badge s-{{ t.status|lower }}">{{ status_text[t.status] }}</span>
       {% if t.completed_at %}<span class="muted small">finished {{ t.completed_at.strftime('%d %b %Y') }}</span>
       {% elif t.due_at %}<span class="muted small">target {{ t.due_at.strftime('%d %b %Y, %H:%M') }}</span>{% endif %}
+      {% if waits_for[t.task_id] %}<p class="muted small">Waiting for: {% for p in waits_for[t.task_id] %}{{ p.agency_name }}: {{ p.task_description }} ({{ status_text[p.status] }}){{ '; ' if not loop.last }}{% endfor %}</p>{% endif %}
     </li>
     {% endfor %}
   </ol>
   {% elif c.intake_status == 'REJECTED' %}
-  <p>This complaint was not accepted. A reviewer recorded the reason.</p>
+  <p>This complaint was not accepted{% if rejection %} on {{ rejection.created_at.strftime('%d %b %Y') }}{% endif %}.</p>
+  {% if rejection %}<p><strong>Reason given by the reviewer:</strong></p>
+  <p class="quote">{{ rejection.reason }}</p>{% endif %}
   {% else %}
   <p>A reviewer will check your complaint and plan the work. The steps will appear here.</p>
   {% endif %}

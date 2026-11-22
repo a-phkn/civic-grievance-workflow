@@ -43,7 +43,11 @@ def complaint_detail(complaint_id):
         "WHERE a.complaint_id = %s OR a.task_id IN (SELECT task_id FROM task WHERE complaint_id = %s) "
         "ORDER BY a.created_at, a.audit_id", (complaint_id, complaint_id)).fetchall()
     raw = get_mongo().complaints_raw.find_one({"complaint_id": complaint_id}) or {}
-    return render_template("reviewer/complaint_detail.html", c=c, tasks=tasks, deps=deps,
+    by_id = {t["task_id"]: t for t in tasks}
+    waits_for = {}
+    for d in deps:
+        waits_for.setdefault(d["dependent_task_id"], []).append(by_id[d["prerequisite_task_id"]])
+    return render_template("reviewer/complaint_detail.html", c=c, tasks=tasks, waits_for=waits_for,
                            history=history, photos=raw.get("attachments", []),
                            reject_form=ReasonForm(prefix="reject"))
 

@@ -45,6 +45,7 @@ table{width:100%;border-collapse:collapse;background:#fff}
 th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:14px;color:var(--muted);font-weight:600}
 table.compact td,table.compact th{padding:6px 8px;font-size:14px}
+.nowrap{white-space:nowrap}   /* keep "#2 SAFETY_CHECK" and "23 Nov, 12:59" on one line */
 .num{text-align:right}.empty{color:var(--muted);font-style:italic}
 .row-overdue{background:var(--bad-bg)}.danger{color:var(--bad)}
 .row-form{display:flex;gap:6px;align-items:center}.row-form select,.row-form input{width:auto;padding:6px 8px}

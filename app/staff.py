@@ -3,6 +3,7 @@ Scope: own agency only. The agency comes from APP_USER (D1 'staff agency'),
 never from the form or URL."""
 from flask import Blueprint, abort, flash, redirect, render_template, url_for
 from flask_login import current_user
+from psycopg import Rollback
 
 from .auth import role_required
 from .db import audit, get_db
@@ -62,12 +63,15 @@ def update_status(task_id):
         return redirect(url_for("staff.task_list"))
 
     with conn.transaction():
+        # Log the staff change first, so the history shows it before any
+        # unlock or hold the UPDATE's trigger logs (DFD 5.3): cause, then effect.
+        audit(conn, "STATUS_CHANGE", user_id=current_user.id, task_id=task_id,
+              old_status=task["status"], new_status=form.new_status.data)
         changed = conn.execute(
             "UPDATE task SET status = %s WHERE task_id = %s AND status = %s",
             (form.new_status.data, task_id, task["status"])).rowcount
-        if changed:
-            audit(conn, "STATUS_CHANGE", user_id=current_user.id, task_id=task_id,
-                  old_status=task["status"], new_status=form.new_status.data)
+        if not changed:
+            raise Rollback()   # someone else changed it first: drop the audit row too
     if not changed:
         flash(f"Task {task_id} changed while you were looking at it. Please check it again.", "error")
     else:

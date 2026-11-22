@@ -111,6 +111,7 @@ def login():
             conn.execute("UPDATE app_user SET password_hash = %s WHERE user_id = %s",
                          (ph.hash(form.password.data), row["user_id"]))
         session.clear()                                       # fresh session, no carried-over data
+        session.permanent = True                              # 30-minute idle timeout (config.py)
         login_user(User(row))
         audit(conn, "LOGIN", user_id=row["user_id"])
         return redirect(url_for(ROLE_HOME[row["role"]]))   # never a URL from the request: no open redirect

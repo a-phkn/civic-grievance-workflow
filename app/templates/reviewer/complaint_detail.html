@@ -18,24 +18,24 @@
   <h2>Tasks</h2>
   {% if tasks %}
   <table>
-    <thead><tr><th scope="col">Task</th><th scope="col">Agency</th><th scope="col">Status</th><th scope="col">Due</th></tr></thead>
+    <thead><tr><th scope="col">Task</th><th scope="col">Agency</th><th scope="col">Status</th><th scope="col">Due</th><th scope="col">Waits for</th></tr></thead>
     <tbody>{% for t in tasks %}
-      <tr><td>#{{ t.task_id }} {{ t.task_code }}</td><td>{{ t.agency_name }}</td>
+      <tr><td class="nowrap">#{{ t.task_id }} {{ t.task_code }}</td><td>{{ t.agency_name }}</td>
           <td><span class="badge s-{{ t.status|lower }}">{{ t.status|replace('_',' ')|title }}</span></td>
-          <td>{{ t.due_at.strftime('%d %b, %H:%M') if t.due_at else '—' }}</td></tr>
+          <td class="nowrap">{{ t.due_at.strftime('%d %b, %H:%M') if t.due_at else '—' }}</td>
+          <td>{% for p in waits_for[t.task_id] %}#{{ p.task_id }} {{ p.task_code }} ({{ p.status|replace('_',' ')|title }}){{ ', ' if not loop.last }}{% else %}—{% endfor %}</td></tr>
     {% endfor %}</tbody>
   </table>
-  {% if deps %}<p class="muted small">Waits for: {% for d in deps %}task {{ d.dependent_task_id }} after {{ d.prerequisite_task_id }}{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
   {% else %}<p class="empty">No tasks yet. Phase 1 does not include the AI proposal step.</p>{% endif %}
 </section>
 
 {% if c.intake_status in ('PENDING', 'UNDER_REVIEW') %}
 <section class="card">
   <h2>Reject this complaint</h2>
-  <p class="muted">Use this when the complaint is not a civic problem or is a duplicate. The citizen sees that it was not accepted.</p>
+  <p class="muted">Use this when the complaint is not a civic problem or is a duplicate. The citizen sees your reason on their complaint page.</p>
   <form method="post" action="{{ url_for('reviewer.reject', complaint_id=c.complaint_id) }}" novalidate>
     {{ reject_form.hidden_tag() }}
-    {{ field(reject_form.reason, hint='Recorded in the audit log. 5 to 500 characters.', rows=3, maxlength=500) }}
+    {{ field(reject_form.reason, hint='Shown to the citizen and recorded in the audit log. 5 to 500 characters.', rows=3, maxlength=500) }}
     {{ reject_form.submit(class_='btn danger', value='Reject complaint') }}
   </form>
 </section>

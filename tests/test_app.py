@@ -203,12 +203,47 @@ def test_mongodb_needs_a_login_and_app_user_is_limited(client):
     assert "complaints_raw" in mongo().list_collection_names()
 
 
+def test_idle_session_expires(client):
+    """OWASP session management: an idle login expires (30 min; 1 s here to test it)."""
+    import time
+    from datetime import timedelta
+    client.application.permanent_session_lifetime = timedelta(seconds=3)
+    r = login(client, "citizen@civic.demo")
+    assert "Expires=" in r.headers["Set-Cookie"]           # a timed cookie, not "until browser closes"
+    for _ in range(3):                                      # active use keeps the login alive (idle, not absolute)
+        time.sleep(1.5)
+        assert client.get("/citizen/complaints").status_code == 200
+    time.sleep(4)                                           # idle longer than the limit
+    r = client.get("/citizen/complaints")
+    assert r.status_code == 302 and "/login" in r.headers["Location"]
+
+
 def test_logout_requires_post(client):
     login(client, "citizen@civic.demo")
     assert client.get("/logout").status_code == 405
 
 
 # ------------------------------------------------------------------ validation messages
+def test_citizen_sees_why_complaint_was_rejected(client):
+    """Rationale explanation: the reviewer's reason (stored in AUDIT_LOG) is shown
+    to the citizen who owns the complaint."""
+    login(client, "citizen@civic.demo")
+    t = token(client, "/citizen/complaints/new")
+    client.post("/citizen/complaints/new", data={"csrf_token": t,
+                "description": "Dog barking every night in the next building"})
+    cid = sql("SELECT max(complaint_id) FROM complaint")[0][0]
+    client.post("/logout", data={"csrf_token": token(client, "/citizen/complaints")})
+    login(client, "reviewer@civic.demo")
+    t = token(client, f"/reviewer/complaints/{cid}")
+    reason = "Noise from neighbours is handled by the police helpline, not civic agencies"
+    client.post(f"/reviewer/complaints/{cid}/reject", data={"reject-csrf_token": t, "reject-reason": reason})
+    assert sql("SELECT intake_status FROM complaint WHERE complaint_id = %s", (cid,))[0][0] == "REJECTED"
+    client.post("/logout", data={"csrf_token": token(client, "/reviewer/complaints")})
+    login(client, "citizen@civic.demo")
+    page = client.get(f"/citizen/complaints/{cid}").get_data(as_text=True)
+    assert "not accepted" in page and reason in page
+
+
 def test_register_validation_messages(client):
     t = token(client, "/register")
     r = client.post("/register", data={"csrf_token": t, "name": "1", "email": "not-an-email",
@@ -351,11 +386,59 @@ def test_unlock_demo_through_the_ui(client):
     assert "ROAD_REPAIR" in client.get("/staff/tasks").get_data(as_text=True)
 
 
+def test_waiting_step_names_what_it_waits_for(client):
+    """Rationale explanation: a blocked step names the earlier steps it still waits
+    for; a step that is done drops off the list. Reviewer sees the same per task."""
+    login(client, "water.staff@civic.demo")
+    staff_move(client, 1, "IN_PROGRESS")
+    staff_move(client, 1, "COMPLETED")
+    client.post("/logout", data={"csrf_token": token(client, "/staff/tasks")})
+    login(client, "citizen@civic.demo")
+    page = client.get("/citizen/complaints/101").get_data(as_text=True)
+    waiting = re.search(r"Waiting for: (.*?)</p>", page).group(1)
+    assert "Electricity: Make exposed or damaged power lines safe (Ready for the agency)" in waiting
+    assert "Water" not in waiting                            # completed, so no longer waited for
+    client.post("/logout", data={"csrf_token": token(client, "/citizen/complaints")})
+    login(client, "reviewer@civic.demo")
+    page = client.get("/reviewer/complaints/101").get_data(as_text=True)
+    assert "#1 PIPE_REPAIR (Completed), #2" in page
+
+
+def test_history_shows_cause_before_effect(client):
+    """Audit order: the staff member's completion is logged before the unlock
+    it caused (both rows share one transaction timestamp, so audit_id decides)."""
+    login(client, "water.staff@civic.demo")
+    staff_move(client, 1, "IN_PROGRESS")
+    staff_move(client, 1, "COMPLETED")
+    client.post("/logout", data={"csrf_token": token(client, "/staff/tasks")})
+    login(client, "power.staff@civic.demo")
+    staff_move(client, 2, "IN_PROGRESS")
+    staff_move(client, 2, "COMPLETED")
+    rows = sql("SELECT action, task_id, new_status FROM audit_log WHERE task_id IN (2, 3) "
+               "ORDER BY created_at, audit_id")
+    assert rows.index(("STATUS_CHANGE", 2, "COMPLETED")) < rows.index(("AUTO_UNLOCK", 3, "READY_FOR_DISPATCH")), rows
+
+
 def test_staff_cannot_skip_a_step(client):
     """A forged POST of READY -> COMPLETED is refused (only legal next steps)."""
     login(client, "water.staff@civic.demo")
     staff_move(client, 1, "COMPLETED")
     assert sql("SELECT status FROM task WHERE task_id = 1")[0][0] == "READY_FOR_DISPATCH"
+
+
+def test_stale_status_change_is_refused(client):
+    """Staff loaded the page while task 1 was IN_PROGRESS; someone else completed it
+    before they pressed "Report a failure". The request re-reads the status, finds
+    FAILED is not a legal step from COMPLETED, and refuses: the completion stands."""
+    login(client, "water.staff@civic.demo")
+    staff_move(client, 1, "IN_PROGRESS")
+    t = token(client, "/staff/tasks")                       # page shows IN_PROGRESS
+    sql("UPDATE task SET status = 'COMPLETED' WHERE task_id = 1 RETURNING task_id")  # the other person
+    r = client.post("/staff/tasks/1/status", data={"t1-csrf_token": t, "t1-new_status": "FAILED"},
+                    follow_redirects=True)
+    assert "not allowed from COMPLETED" in r.get_data(as_text=True)
+    assert sql("SELECT status FROM task WHERE task_id = 1")[0][0] == "COMPLETED"
+    assert sql("SELECT count(*) FROM audit_log WHERE task_id = 1 AND new_status = 'FAILED'")[0][0] == 0
 
 
 def test_failure_then_reviewer_retry(client):

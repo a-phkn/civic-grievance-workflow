@@ -17,6 +17,8 @@ app or code. Screenshots are in `docs/screenshots/`.
 
 ## 1. Simplicity: ask only for what the process needs
 
+Sources: [F1] keep forms short and logical; [F3] enforce business rules on the server.
+
 - **Each form asks only for what its DFD process takes as input.** The complaint form
   has two fields because DFD 2.0 takes "complaint text" and "attachment". The system
   finds the citizen (from the login), the date, the status and the agencies itself.
@@ -32,6 +34,8 @@ app or code. Screenshots are in `docs/screenshots/`.
   say "(optional)". Required fields have a `*`.
 
 ## 2. Field types: the right input for each value
+
+Sources: [F1] use the right element and input type; [F2] labels for every control.
 
 | Value | Field type | Why |
 | --- | --- | --- |
@@ -51,6 +55,8 @@ each table row to one line; with radios the row would grow.
 
 ## 3. User guidance
 
+Sources: [F1] state requirements, mark required fields, errors next to the control; [F2] error messages near the fields plus a summary at the top; [F5] [F6] explain decisions.
+
 - **A hint under each label** says what to type and the limits, before the user makes a
   mistake: "Say what you see and the exact place, e.g. *Water pipe burst outside 12th
   Main, near the bus stop.* 20 to 2,000 characters."
@@ -62,6 +68,13 @@ each table row to one line; with radios the row would grow.
 - **The user's input is kept** after an error (except passwords), so nothing is retyped.
 - **Status in words citizens understand.** The citizen sees "Waiting for another step",
   "Being worked on", "Done", not `BLOCKED` or `IN_PROGRESS` (`citizen.TASK_STATUS_TEXT`).
+- **Every decision is explained to the person it affects** [F5] [F6]. A rejected complaint
+  shows the reviewer's reason to the citizen (the reject form's hint says "Shown to the
+  citizen", so the reviewer writes it for them). A waiting step names the steps it still
+  waits for, e.g. "Waiting for: Electricity: Make exposed or damaged power lines safe
+  (Ready for the agency)"; the reviewer sees a "Waits for" column for every task.
+  (Screenshots 22, 23, 24; tests `test_citizen_sees_why_complaint_was_rejected`,
+  `test_waiting_step_names_what_it_waits_for`.)
 - **A clear message after every action**: "Complaint #102 submitted. You can follow its
   progress here.", "Task 3 is ready again with a new deadline."
 - **Errors from the database are explained too**: if a reviewer tries something the
@@ -71,6 +84,8 @@ each table row to one line; with radios the row would grow.
   `aria-live`; the main list tables have a caption for screen readers and `scope="col"` headers.
 
 ## 4. Clear layout
+
+Sources: [F1] single column, labels above controls, large enough controls (16px text, about 48px high).
 
 - **One column, label above the field.** Easiest to scan and works on a phone without
   extra layout code.
@@ -87,6 +102,8 @@ each table row to one line; with radios the row would grow.
   newest first.
 
 ## 5. Explanation: why the server checks everything again
+
+Sources: [F3] validate on the server, allow-lists, reject on failure; [F4] the same rule in the database.
 
 The browser helps (`type="email"`, `maxlength`, `accept`, the counter) but is never
 trusted. The forms carry `novalidate` so the browser's own pop-ups do not appear and all
@@ -127,6 +144,23 @@ required photo would stop people reporting.
 `maxlength` and the counter in the browser; `Length(20, 2000)` in the form; 5 MB request
 limit with a friendly 413 page for files.
 
+**Why show the citizen the rejection reason and what a step waits for?**
+The ICO calls this a rationale explanation: "the reasons that led to a decision, delivered
+in an accessible and non-technical way" [F5]. A person can only challenge a decision they
+understand [F6]. Both come from data already stored (AUDIT_LOG, TASK_DEPENDENCY), so no
+schema change was needed. A citizen sees only steps not yet done; the reviewer sees all.
+
 **Why a hint under the label and not placeholder text inside the box?**
 Placeholder text disappears when the user starts typing and is often low contrast; a hint
 stays visible while they type.
+
+## Sources
+
+Opened and checked on 2026-11-21.
+
+- [F1] [web.dev: Form design basics](https://web.dev/learn/forms/design-basics)
+- [F2] [W3C WAI forms tutorial: user notifications](https://www.w3.org/WAI/tutorials/forms/notifications/)
+- [F3] [OWASP Input Validation Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html) and [OWASP Secure Coding checklist](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/stable-en/02-checklist/05-checklist.html)
+- [F4] [PostgreSQL 16: Constraints](https://www.postgresql.org/docs/16/ddl-constraints.html)
+- [F5] [ICO: Explaining decisions made with AI, "What goes into an explanation?" (rationale explanation)](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/artificial-intelligence/explaining-decisions-made-with-artificial-intelligence/part-1-the-basics-of-explaining-ai/what-goes-into-an-explanation/) (opened 2026-11-22)
+- [F6] [Schmude et al., "Two Means to an End Goal: Connecting Explainability and Contestability in the Regulation of Public Sector AI", arXiv 2504.18236](https://arxiv.org/pdf/2504.18236) (opened 2026-11-22)

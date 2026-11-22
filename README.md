@@ -11,7 +11,7 @@ rule and screen here traces back to it; `db/README.md` has the table-by-table ma
 
 | Role | Can do | DFD |
 | --- | --- | --- |
-| Citizen | Register, log in, report a problem with an optional photo, follow each step of their own complaints | 1.0, 2.0, 6.0 |
+| Citizen | Register, log in, report a problem with an optional photo, follow each step of their own complaints, see what a waiting step waits for and why a complaint was rejected | 1.0, 2.0, 6.0 |
 | Agency staff | See only their agency's ready tasks, start them, mark them completed or failed | 5.1, 5.2 |
 | (database) | When every prerequisite of a task is completed, the task unlocks with a new deadline; if one fails, it goes on hold for review | 5.3 |
 | Reviewer | See all complaints and their history, reject with a reason, retry / cancel failed tasks, waive a dependency, view reports | 4.3, 5.4, 6.0 |
@@ -45,7 +45,7 @@ app/            Flask app: one blueprint per role (citizen, staff, reviewer, adm
   templates/    pages; _form.html draws every field the same way
   static/       style.css, app.js (counter, small helpers; no rule depends on JS)
 db/             schema.sql, seed_demo.sql, roles.sql, mongo_users.py, seed_mongo.py, test_schema.py, README.md
-tests/          test_app.py: 36 end-to-end tests of the app
+tests/          test_app.py: 41 end-to-end tests of the app
 docs/           SECURITY_AND_VALIDATION.md, FORM_DESIGN_VIVA.md, screenshots/, test-results/
 run.py          starts the app on http://127.0.0.1:5000
 ```
@@ -149,8 +149,8 @@ Both suites rebuild the databases from scratch, so run them on a demo database o
 # database rules: 49 tests
 DATABASE_URL=postgresql://localhost/grievance python db/test_schema.py
 
-# web app: 36 tests (needs MongoDB running)
-OWNER_DATABASE_URL=postgresql://localhost/grievance pytest -v tests/test_app.py
+# web app: 41 tests (needs MongoDB running)
+OWNER_DATABASE_URL=postgresql://localhost/grievance python -m pytest -v tests/test_app.py
 ```
 
 Run the app tests last, or re-run `roles.sql` (step 2) afterwards: the database tests
@@ -163,7 +163,7 @@ set a different password on `grievance_app`. The results from our own run are in
   in the code, the test that proves it, and the source it follows.
 - `docs/FORM_DESIGN_VIVA.md`: how the forms were designed (simplicity, field types, user
   guidance, layout) with likely viva questions and answers.
-- `docs/screenshots/`: 21 screenshots of every role, including validation errors, a
+- `docs/screenshots/`: 24 screenshots of every role, including validation errors, a
   blocked role and a rejected forged request.
 - `db/README.md`: traceability to the ER diagram and relational schema, the allowed
   task status changes, and the decisions the design documents left open.

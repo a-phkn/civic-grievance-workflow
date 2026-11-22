@@ -1,6 +1,7 @@
 """Settings, read from environment variables so no secret lives in the code."""
 import os
 import secrets
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,8 +32,11 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"                # not sent on cross-site POSTs
     SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "0") == "1"  # 1 behind HTTPS
 
-    # A form's CSRF token is valid for 30 minutes; the login cookie itself ends
-    # when the browser closes (Flask's default, non-permanent session).
+    # Idle timeout (OWASP Session Management): the login is a "permanent" session
+    # that expires 30 minutes after the last request. Flask renews it on every
+    # request and checks the age on the server, so an old cookie is refused.
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+    # A form's CSRF token is valid for 30 minutes too.
     WTF_CSRF_TIME_LIMIT = 30 * 60
 
     # Login lockout: this many failures within the window locks the account

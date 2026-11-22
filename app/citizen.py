@@ -114,8 +114,24 @@ def complaint_detail(complaint_id):
         "FROM task t JOIN agency a USING (agency_id) "
         "JOIN agency_task_type tt USING (agency_id, task_code) "
         "WHERE t.complaint_id = %s ORDER BY t.task_id", (complaint_id,)).fetchall()
+    # Rationale explanation for a waiting step: which earlier steps it waits
+    # for that are not done yet (TASK_DEPENDENCY, the same rows DFD 5.3 uses).
+    by_id = {t["task_id"]: t for t in tasks}
+    waits_for = {}
+    for d in conn.execute("SELECT prerequisite_task_id, dependent_task_id FROM task_dependency "
+                          "WHERE complaint_id = %s ORDER BY prerequisite_task_id", (complaint_id,)):
+        prereq = by_id[d["prerequisite_task_id"]]
+        if prereq["status"] != "COMPLETED":
+            waits_for.setdefault(d["dependent_task_id"], []).append(prereq)
+    # Rationale explanation: the reviewer's reason is shown to the citizen
+    # (it is already stored in AUDIT_LOG by reviewer.reject, DFD 4.3).
+    rejection = None
+    if c["intake_status"] == "REJECTED":
+        rejection = conn.execute(
+            "SELECT reason, created_at FROM audit_log WHERE complaint_id = %s AND action = 'REJECT' "
+            "ORDER BY audit_id DESC LIMIT 1", (complaint_id,)).fetchone()
     raw = get_mongo().complaints_raw.find_one({"complaint_id": complaint_id}) or {}
-    return render_template("citizen/complaint_detail.html", c=c, tasks=tasks,
+    return render_template("citizen/complaint_detail.html", c=c, tasks=tasks, waits_for=waits_for, rejection=rejection,
                            photos=raw.get("attachments", []), status_text=TASK_STATUS_TEXT)
 
 
