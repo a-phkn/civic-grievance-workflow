@@ -36,8 +36,9 @@ def strip(value):
 class LoginForm(FlaskForm):
     email = StringField("Email", filters=[lower_strip],
                         validators=[DataRequired("Enter your email."), Email("Enter a valid email address."),
-                                    Length(max=255)])
-    password = PasswordField("Password", validators=[DataRequired("Enter your password."), Length(max=128)])
+                                    Length(max=255, message="Use at most 255 characters.")])
+    password = PasswordField("Password", validators=[DataRequired("Enter your password."),
+                                                     Length(max=128, message="Use at most 128 characters.")])
     submit = SubmitField("Log in")
 
 
@@ -45,10 +46,10 @@ class RegisterForm(FlaskForm):
     """Citizen self-registration (DFD 1.0, 'registration details').
     The role is never taken from the form: the server always sets CITIZEN."""
     name = StringField("Full name", filters=[strip],
-                       validators=[DataRequired("Enter your name."), Length(2, 100), NAME_RULE])
+                       validators=[DataRequired("Enter your name."), Length(2, 100, "Use 2 to 100 characters."), NAME_RULE])
     email = StringField("Email", filters=[lower_strip],
                         validators=[DataRequired("Enter your email."), Email("Enter a valid email address."),
-                                    Length(max=255)])
+                                    Length(max=255, message="Use at most 255 characters.")])
     password = PasswordField("Password", validators=[DataRequired("Choose a password."),
                                                      Length(8, 128, "Use 8 to 128 characters."),
                                                      strong_password])
@@ -72,7 +73,7 @@ class ComplaintForm(FlaskForm):
 # ------------------------------------------------------------- DFD 5.2
 class TaskStatusForm(FlaskForm):
     """Choices are filled per task with only the legal next statuses."""
-    new_status = SelectField("New status", validators=[DataRequired()], choices=[])
+    new_status = SelectField("New status", validators=[DataRequired("Choose the next step.")], choices=[])
     submit = SubmitField("Update")
 
 
@@ -88,19 +89,20 @@ class ReasonForm(FlaskForm):
 # ------------------------------------------------------------- DFD 1.0 (admin)
 class AgencyForm(FlaskForm):
     agency_name = StringField("Agency name", filters=[strip],
-                              validators=[DataRequired("Enter a name."), Length(2, 100)])
-    description = TextAreaField("Description", filters=[strip], validators=[Optional(), Length(max=500)])
+                              validators=[DataRequired("Enter a name."), Length(2, 100, "Use 2 to 100 characters.")])
+    description = TextAreaField("Description", filters=[strip],
+                                validators=[Optional(), Length(max=500, message="Use at most 500 characters.")])
     submit = SubmitField("Add agency")
 
 
 class TaskTypeForm(FlaskForm):
     agency_id = SelectField("Agency", coerce=int, validators=[InputRequired("Choose an agency.")])
     task_code = StringField("Task code", filters=[lambda v: v.strip().upper() if isinstance(v, str) else v],
-                            validators=[DataRequired("Enter a task code."), Length(2, 30),
+                            validators=[DataRequired("Enter a task code."), Length(2, 30, "Use 2 to 30 characters."),
                                         Regexp(r"^[A-Z][A-Z0-9_]*$",
                                                message="Capital letters, digits and _ only, e.g. PIPE_REPAIR.")])
     task_description = TextAreaField("What the task involves", filters=[strip],
-                                     validators=[Optional(), Length(max=500)])
+                                     validators=[Optional(), Length(max=500, message="Use at most 500 characters.")])
     sla_hours = IntegerField("SLA (hours)", validators=[
         InputRequired("Enter the SLA in hours."),
         NumberRange(1, 8760, "Use a whole number from 1 to 8760 (one year).")])
@@ -116,10 +118,10 @@ class SlaForm(FlaskForm):
 
 class StaffAccountForm(FlaskForm):
     name = StringField("Full name", filters=[strip],
-                       validators=[DataRequired("Enter a name."), Length(2, 100), NAME_RULE])
+                       validators=[DataRequired("Enter a name."), Length(2, 100, "Use 2 to 100 characters."), NAME_RULE])
     email = StringField("Email", filters=[lower_strip],
                         validators=[DataRequired("Enter an email."), Email("Enter a valid email address."),
-                                    Length(max=255)])
+                                    Length(max=255, message="Use at most 255 characters.")])
     role = SelectField("Role", choices=[("AGENCY_STAFF", "Agency staff"), ("REVIEWER", "Reviewer")],
                        validators=[DataRequired("Choose a role.")])
     agency_id = SelectField("Agency (agency staff only)", coerce=int, validators=[Optional()])

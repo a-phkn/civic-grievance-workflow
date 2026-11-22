@@ -249,9 +249,10 @@ def test_register_validation_messages(client):
     r = client.post("/register", data={"csrf_token": t, "name": "1", "email": "not-an-email",
                                        "password": "short", "confirm": "different"})
     body = r.get_data(as_text=True)
-    for msg in ("Enter a valid email address.", "Use 8 to 128 characters.",
+    for msg in ("Use 2 to 100 characters.", "Enter a valid email address.", "Use 8 to 128 characters.",
                 "The two passwords do not match.", "Please fix"):
         assert msg in body, msg
+    assert "Field must be" not in body          # no library default wording reaches the user
 
 
 def test_duplicate_email_message(client):
