@@ -100,6 +100,11 @@ Sources: [F1] single column, labels above controls, large enough controls (16px 
 - **Tables for lists.** Staff tasks are sorted earliest deadline first; overdue rows get a
   red background and the word "Overdue" (not colour alone). Reviewer complaints are
   newest first.
+- **A focus ring you can see** [F7]. The keyboard focus ring is dark navy, 13.5:1
+  against white; WCAG asks for at least 3:1. (The first version used yellow, which is only
+  1.6:1 on white, so it was changed. Inside the blue header the yellow stays, at 5:1.)
+- **Works on a phone.** Every page was checked at 390 px wide with no sideways scrolling;
+  wide tables scroll inside their own box.
 
 ## 5. Explanation: why the server checks everything again
 
@@ -164,3 +169,4 @@ Opened and checked on 2026-11-21.
 - [F4] [PostgreSQL 16: Constraints](https://www.postgresql.org/docs/16/ddl-constraints.html)
 - [F5] [ICO: Explaining decisions made with AI, "What goes into an explanation?" (rationale explanation)](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/artificial-intelligence/explaining-decisions-made-with-artificial-intelligence/part-1-the-basics-of-explaining-ai/what-goes-into-an-explanation/) (opened 2026-11-22)
 - [F6] [Schmude et al., "Two Means to an End Goal: Connecting Explainability and Contestability in the Regulation of Public Sector AI", arXiv 2504.18236](https://arxiv.org/pdf/2504.18236) (opened 2026-11-22)
+- [F7] [W3C: Understanding WCAG 2.2 SC 1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html) (opened 2026-11-22)

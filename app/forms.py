@@ -64,7 +64,7 @@ class ComplaintForm(FlaskForm):
     description = TextAreaField("What is the problem, and where?", filters=[strip],
                                 validators=[DataRequired("Describe the problem."),
                                             Length(20, 2000, "Use 20 to 2,000 characters.")])
-    photo = FileField("Photo (optional)", validators=[
+    photo = FileField("Photo", validators=[
         FileAllowed(["jpg", "jpeg", "png"], "Only JPG or PNG images are accepted."),
         FileSize(max_size=5 * 1024 * 1024, message="The photo must be 5 MB or smaller.")])
     submit = SubmitField("Submit complaint")

@@ -47,4 +47,4 @@ tests/test_app.py::test_reviewer_waive_and_cancel PASSED                 [ 95%]
 tests/test_app.py::test_admin_sla_change_is_audited PASSED               [ 97%]
 tests/test_app.py::test_admin_creates_staff_who_can_log_in PASSED        [100%]
 
-============================= 41 passed in 52.56s ==============================
+============================= 41 passed in 54.89s ==============================
